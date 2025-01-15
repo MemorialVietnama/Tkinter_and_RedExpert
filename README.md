@@ -602,3 +602,11 @@ def display_posts(username, password):
     # Настраиваем область прокрутки canvas, чтобы она охватывала все добавленные элементы
     canvas.config(scrollregion=canvas.bbox("all"))
 ```
+Далее просто вызываем данную функцию в строках Tkinter 
+```python
+
+display_posts(username, password)
+
+admin_window.mainloop()
+
+```
