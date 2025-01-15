@@ -362,6 +362,7 @@ def sort_treeview(column, reverse):
 - Обновление таблицы: Строки перемещаются в соответствии с отсортированным порядком.
 - Обновление команды заголовка: При следующем нажатии на заголовок сортировка будет выполнена в обратном порядке (not reverse).
 ### Кнопка Обновить и Поиск
+![Окно поиска](./images_readme/admin_audit_search.png)
 1. **Кнопка "Обновить":**
 Кнопка "Обновить" обновляет данные в таблице аудита, запрашивая актуальные записи из базы данных.
 Код кнопки:
@@ -391,6 +392,99 @@ def update_treeview(username, password, role):
     2. Выполняется запрос к базе данных для получения новых данных.
     3. Новые данные вставляются в таблицу.
 2. **Кнопка "Поиск":**
+Кнопка "Поиск" открывает новое окно, где пользователь может задать критерии для поиска записей в таблице аудита.
+Код кнопки:
+```python
+find_button = ttkb.Button(button_table, bootstyle="primary", text="Найти", command=open_search_window)
+find_button.pack(side="left", padx=5)
+```
+При нажатии на кнопку вызывается функция open_search_window, которая открывает окно поиска.
+Функция open_search_window:
+```python
+def open_search_window():
+    search_window = tk.Toplevel(admin_window)
+    search_window.title("Поиск данных")
+    search_window.geometry("350x250")
+    current_dir = Path(__file__).resolve().parent
+    icon_path = current_dir.parents[0] / 'src' / 'r_app.ico'
+    search_window.iconbitmap(icon_path)
+    
+    ttkb.Label(search_window, text="Выберите столбец:", bootstyle="light").pack(pady=5)
+
+    column_combobox = ttkb.Combobox(search_window, bootstyle="primary", values=["ID", "Время", "Действия", "Таблица", "Информация"])
+    column_combobox.pack(pady=5)
+
+    ttkb.Label(search_window, text="Введите значение для поиска:", bootstyle="light").pack(pady=5)
+    
+    search_entry = ttkb.Entry(search_window, bootstyle="primary")
+    search_entry.pack(pady=5)
+
+    date_entry = ttkb.DateEntry(search_window, bootstyle="primary", width=12)
+    date_entry.pack(pady=5)
+    date_entry.pack_forget()  
+
+    def perform_search():
+        column = column_combobox.get()
+        for row in treeview.get_children():
+            treeview.delete(row)
+
+        conn = connect_to_database(username, password)
+        if conn:
+            cursor = conn.cursor()
+            if column == "Время":
+                search_value = date_entry.entry.get()
+                search_value = datetime.strptime(search_value, "%d.%m.%Y")
+                start_of_day = datetime.combine(search_value, datetime.min.time())
+                end_of_day = datetime.combine(search_value, datetime.max.time())
+                query = "SELECT * FROM USER_LOGS WHERE LOG_TIME >= ? AND LOG_TIME <= ?"
+                cursor.execute(query, (start_of_day, end_of_day))
+            elif column == "ID":
+                search_value = search_entry.get()
+                try:
+                    search_value = int(search_value) 
+                    query = "SELECT * FROM USER_LOGS WHERE ID = ?"
+                    cursor.execute(query, (search_value,))
+                except ValueError:
+                    messagebox.showerror("Ошибка", "ID должен быть числом")
+                    return
+            elif column == "Информация":
+                query = "SELECT * FROM USER_LOGS WHERE ADDITIONAL_INFO LIKE ?"
+                search_value = search_entry.get()
+                cursor.execute(query, (f'%{search_value}%',))
+            else:
+                search_value = search_entry.get()
+                if column == "Действия":
+                    query = "SELECT * FROM USER_LOGS WHERE ACTION LIKE ?"
+                elif column == "Таблица":
+                    query = "SELECT * FROM USER_LOGS WHERE TABLE_NAME LIKE ?"
+                else:
+                    search_window.destroy()
+                    return
+                
+                cursor.execute(query, (f'%{search_value}%',))
+
+            results = cursor.fetchall()
+            conn.close()
+
+            for result in results:
+                treeview.insert("", "end", values=result)
+            
+        search_window.destroy()
+```
+- search_window = tk.Toplevel(admin_window): Создается новое окно для поиска.
+- column_combobox: Позволяет выбрать колонку для поиска (например, "ID", "Время", "Действия").
+- search_entry: Поле для ввода значения поиска.
+- date_entry: Поле для выбора даты (используется, если выбрана колонка "Время").
+- perform_search:Функция, которая выполняет поиск по выбранным критериям.
+
+Как это работает:
+При нажатии на кнопку "Поиск": Открывается новое окно с полями для выбора колонки и ввода значения поиска.
+Пользователь выбирает колонку и вводит значение: Если выбрана колонка "Время", используется поле для выбора даты.
+Для других колонок используется текстовое поле.
+При нажатии на кнопку "Поиск" в окне поиска:
+Все текущие строки в таблице удаляются.
+Выполняется SQL-запрос к базе данных с учетом выбранных критериев.
+Результаты поиска отображаются в таблице.
 
 ## Отображение данных пользователя в заголовке окна приложения
 В этом коде отображение данных пользователя в заголовке окна администратора происходит в несколько этапов. Давайте разберем, как это работает.
