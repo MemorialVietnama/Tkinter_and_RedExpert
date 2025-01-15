@@ -610,3 +610,7 @@ display_posts(username, password)
 admin_window.mainloop()
 
 ```
+
+# Работа с таблицей данных.
+![Окно Таблицы](./images_readme/table_window.png)
+## Отображение таблицы и кнопок
