@@ -541,3 +541,64 @@ SELECT TITLE, DESCRIPTION, AUTHOR, DATE_POSTS FROM POSTS ORDER BY DATE_POSTS DES
 - Заголовок поста: Отображается с помощью кнопки (ttk.Button), стилизованной под заголовок.
 - Описание поста: Отображается в текстовом поле (tk.Text), которое запрещено для редактирования (state="disabled").
 - Автор и дата публикации: Отображаются в виде кнопки (ttk.Button), где текст содержит автора и отформатированную дату.
+
+Отображение постов идет через функцию display_posts:
+```python 
+def display_posts(username, password):
+    # Получаем список постов из базы данных, используя переданные username и password
+    posts = fetch_posts(username, password)
+    
+    # Выводим полученные посты в консоль для отладки
+    print(posts)
+    
+    # Проходим по каждому посту в списке posts
+    for post in posts:
+        # Создаем фрейм (контейнер) для каждого поста внутри canvas_frame
+        post_frame = tk.Frame(canvas_frame)
+        
+        # Размещаем фрейм на экране с отступами и заполнением по горизонтали
+        post_frame.pack(fill="x", padx=(0,20), pady=(0,10))
+
+        # Создаем кнопку с заголовком поста (первый элемент в кортеже post)
+        title_label = ttk.Button(post_frame, style='Custom.TButton', text=post[0])
+        
+        # Размещаем кнопку с заголовком по центру фрейма, с заполнением по горизонтали
+        title_label.pack(anchor="center", pady=0, fill="x")
+
+        # Устанавливаем шрифт для описания поста
+        desk_font = custom_font_entry
+        
+        # Создаем текстовое поле для описания поста (второй элемент в кортеже post)
+        description_text = tk.Text(post_frame, font=desk_font, wrap="word", height=10, relief="flat")
+        
+        # Вставляем текст описания в текстовое поле (начиная с первой строки и первого символа)
+        description_text.insert("1.0", post[1])
+        
+        # Настраиваем текстовое поле:
+        # - Запрещаем редактирование (state="disabled")
+        # - Устанавливаем цвет фона и текста
+        # - Убираем границы (borderwidth=0)
+        # - Устанавливаем шрифт
+        description_text.config(state="disabled", bg='#131313', fg='#e5e5e5', borderwidth=0, font=desk_font)
+        
+        # Размещаем текстовое поле с описанием поста, выравнивая по левому краю и заполняя по горизонтали
+        description_text.pack(anchor="w", fill="x")
+
+        # Устанавливаем шрифт для отображения автора и даты
+        date_font = custom_font_status
+        
+        # Форматируем дату публикации (четвертый элемент в кортеже post) в строку вида "день месяц год года"
+        formatted_date = post[3].strftime("%d %B %Y года")
+        
+        # Создаем кнопку с информацией об авторе и дате публикации
+        date_author_label = ttk.Button(post_frame, style='Custom.TButton', text=f"Автор: {post[2]} | Дата: {formatted_date}")
+        
+        # Размещаем кнопку с автором и датой, выравнивая по левому краю
+        date_author_label.pack(anchor="w")
+
+    # Обновляем внутренние задачи canvas (необходимо для корректного отображения)
+    canvas.update_idletasks()
+    
+    # Настраиваем область прокрутки canvas, чтобы она охватывала все добавленные элементы
+    canvas.config(scrollregion=canvas.bbox("all"))
+```
