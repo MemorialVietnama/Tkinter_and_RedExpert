@@ -291,7 +291,7 @@ except fdb.Error as e:
 - Окно взаимодействует с базой данных Firebird (или Red Expert), извлекая данные (например, информацию о сотрудниках, отделах) и записывая изменения (например, логи действий пользователей).
 
 
- ## Журнал Аудита
+## Журнал Аудита
  Журнал аудита (или лог действий) — это важный инструмент для отслеживания и регистрации всех изменений и действий, которые происходят в системе. Он играет ключевую роль в обеспечении прозрачности, безопасности и контроля над данными. Вот основные цели и задачи журнала аудита:
  Работает таблица через treeview в Tkinter
  ```python
@@ -361,6 +361,30 @@ def sort_treeview(column, reverse):
 - Сортировка: Данные сортируются по значению в выбранной колонке. Если reverse=True, сортировка выполняется по убыванию.
 - Обновление таблицы: Строки перемещаются в соответствии с отсортированным порядком.
 - Обновление команды заголовка: При следующем нажатии на заголовок сортировка будет выполнена в обратном порядке (not reverse).
+### Кнопка Обновить и Поиск
+1. **Кнопка "Обновить":**
+Кнопка "Обновить" обновляет данные в таблице аудита, запрашивая актуальные записи из базы данных.
+Код кнопки:
+```python
+refresh_button = ttkb.Button(button_table, bootstyle="primary", text="Обновить Журнал", command=lambda: update_treeview(username, password, role))
+refresh_button.pack(side="left", padx=5)
+```
+- command=lambda: update_treeview(username, password, role): При нажатии на кнопку вызывается функция update_treeview, которая обновляет данные в таблице.
+
+Функция update_treeview:
+```python
+def update_treeview(username, password, role):
+    for row in treeview.get_children():
+        treeview.delete(row)
+
+    logs = fetch_user_logs(username, password)
+    for log in logs:
+        treeview.insert("", "end", values=log)
+```
+- treeview.get_children(): Возвращает список всех строк в таблице.
+- treeview.delete(row): Удаляет каждую строку из таблицы.
+- fetch_user_logs(username, password): Запрашивает актуальные данные из базы данных (таблица USER_LOGS).
+- treeview.insert("", "end", values=log): Вставляет новые данные в таблицу.
 
 ## Отображение данных пользователя в заголовке окна приложения
 В этом коде отображение данных пользователя в заголовке окна администратора происходит в несколько этапов. Давайте разберем, как это работает.
@@ -397,4 +421,3 @@ def sort_treeview(column, reverse):
     ```python
     admin_window.title(f"RUBY STAFF - Сотрудник: {first_name} {middle_name} {last_name}             Авторизован как: {user_name}")
     ```
-    
