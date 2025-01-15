@@ -613,4 +613,141 @@ admin_window.mainloop()
 
 # Работа с таблицей данных.
 ![Окно Таблицы](./images_readme/table_window.png)
-## Отображение таблицы и кнопок
+Этот файл представляет собой приложение на основе библиотеки tkinter для работы с таблицей сотрудников, данные которой хранятся в базе данных. Давайте разберем, как работает этот файл, и какие взаимодействия с базой данных предусмотрены.
+## Отображение таблицы 
+Давайте подробно разберем, как создается и настраивается таблица в этом файле. Таблица создается с использованием виджета ttk.Treeview из библиотеки ttkbootstrap, который предоставляет функциональность для отображения данных в виде таблицы с возможностью сортировки, прокрутки и других функций.
+1. Подготовка данных.
+Перед созданием таблицы данные извлекаются из базы данных с помощью функции fetch_employer_data(conn). Эта функция возвращает:
+- columns: Список названий столбцов таблицы.
+- data: Список строк с данными о сотрудниках
+Функция fetch_employer_data находится по адресу init/function/fetch_data.py:
+```python
+def fetch_employer_data(conn):
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM EMPLOYER")
+    columns = [desc[0] for desc in cursor.description]
+    data = cursor.fetchall()
+    cursor.close()
+    return columns, data
+```
+2. Перевод названий столбцов
+Названия столбцов переводятся на русский язык с помощью функции translate_emp_columns(columns), а функция находится в init/function/translate_columns.py:
+```python
+def translate_emp_columns(columns):
+    translation_dict = {
+        "ID_EMPLOYER": "ID\n\n",
+        "SMALL_DATA": "ФИО",
+        "SURNAME": "Фамилия",
+        "NAME_EMP": "Имя",
+        "SURNAME_FATHER": "Отчество",
+        "POL": "Пол",
+        "INN": "ИНН",
+        "SNILS": "СНИЛС",
+        "DATA_BIRTH": "Дата рождения",
+        "DATE_CITY": "Место рождения",
+        "TYPE_DOC": "Тип документа",
+        "DOC_NUM": "Номер документа",
+        "DOC_DATE": "Дата выдачи \n документа",
+        "DOC_WERE": "Кем выдан документ",
+        "ADRESS_REGIST": "Адрес регистрации",
+        "ADRESS_PROPISKA": "Адрес прописки",
+        "MILITARY_NUM": "Номер  \n военного билета",
+        "MILITARY_DATE": "Дата \n военного билета",
+        "EDUCATION": "Образование"
+    }
+    return [translation_dict.get(col, col) for col in columns]
+```
+3. Создание фрейма для таблицы
+Создается фрейм (tree_frame), который будет содержать таблицу и полосы прокрутки:
+```python
+tree_frame = tk.Frame(root)
+tree_frame.pack(fill=BOTH, expand=True)
+```
+4. Создание таблицы (Treeview)
+Таблица создается с использованием ttk.Treeview:
+```python
+tree = ttkb.Treeview(tree_frame, show="headings")
+tree["columns"] = translated_columns
+```
+- show="headings": Отображаются только заголовки столбцов (без дополнительного столбца для иерархии).
+- tree["columns"] = translated_columns: Задаются названия столбцов.
+
+5. Настройка заголовков столбцов
+Для каждого столбца задается заголовок и команда для сортировки:
+```python
+for col in translated_columns:
+    tree.heading(col, text=col, command=lambda c=col: sort_column(tree, c, False))
+```
+6. Добавление данных в таблицу
+Данные из базы данных добавляются в таблицу:
+```python
+for item in data:
+    tree.insert("", "end", values=item)
+```
+tree.insert("", "end", values=item): Добавляет строку в конец таблицы.
+- "": Указывает, что строка добавляется в корневой уровень (без родительского элемента).
+- "end": Указывает, что строка добавляется в конец списка.
+- values=item: Задает значения для строки.
+7. Настройка ширины столбцов
+Ширина столбцов настраивается на основе длины текста:
+```python
+    def measure_text_width(text, font=None):
+        if font is None:
+            font = ("TkDefaultFont", 10)
+        canvas = tk.Canvas(tree_frame)
+        width = canvas.create_text(0, 0, text=text, font=font, anchor="nw")
+        bbox = canvas.bbox(width)
+        canvas.destroy()
+        return bbox[2] - bbox[0]
+
+    def set_column_widths(tree, columns):
+        for col in columns:
+            max_width = measure_text_width(col)
+            for item in tree.get_children():
+                cell_text = tree.set(item, col)
+                cell_width = measure_text_width(cell_text)
+                if cell_width > max_width:
+                    max_width = cell_width
+            tree.column(col, anchor='center', width=max_width + 30)
+```
+measure_text_width(text): Функция для измерения ширины текста.
+tree.column(col, anchor='center', width=max_width + 30): Устанавливает ширину столбца и выравнивание текста по центру.
+8. Добавление полос прокрутки
+Для таблицы добавляются вертикальная и горизонтальная полосы прокрутки:
+```python
+v_scrollbar = ttkb.Scrollbar(tree_frame, orient=VERTICAL, command=tree.yview, bootstyle='primary')
+v_scrollbar.pack(side=RIGHT, fill=Y)
+
+h_scrollbar = ttkb.Scrollbar(tree_frame, orient=HORIZONTAL, command=tree.xview, bootstyle='primary')
+h_scrollbar.pack(side=BOTTOM, fill=X)
+
+tree.configure(yscrollcommand=v_scrollbar.set, xscrollcommand=h_scrollbar.set)
+```
+- v_scrollbar: Вертикальная полоса прокрутки.
+- h_scrollbar: Горизонтальная полоса прокрутки.
+- tree.configure(yscrollcommand=v_scrollbar.set, xscrollcommand=h_scrollbar.set): Связывает полосы прокрутки с таблицей.
+9. Настройка стилей таблицы
+Стили таблицы настраиваются с использованием ttk.Style:
+```python
+style = ttk.Style()
+style.configure("Treeview.Heading", background="#c61b14", foreground="white", font=('CustomTextFont', 11, "bold"))
+style.configure("Treeview", rowheight=40, background="white", foreground="black", font=custom_font_entry)
+```
+- Treeview.Heading: Стиль для заголовков столбцов.
+- Treeview: Стиль для строк таблицы.
+10. Окрашивание строк
+Строки таблицы окрашиваются с помощью функции color_rows(tree) находящяяся в init/tables/button_function/refresh_buttons :
+```python
+def color_rows(tree):
+    for index, item in enumerate(tree.get_children()):
+        if index % 2 != 0:
+            tree.item(item, tags='even')
+        else:
+            tree.item(item, tags='odd')
+
+    tree.tag_configure('even', background='white')
+    tree.tag_configure('odd', background='lightgrey')
+```
+В результате получается функциональная и стильная таблица для отображения данных о сотрудниках.
+
+
