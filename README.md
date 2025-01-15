@@ -99,7 +99,56 @@
                     ├── log_action.py                         # Функции журналирования действия пользователей в программе
                     └── translate_colums.py                   # Заготовленный функции для отображения в таблицах заголовков
 # Окно авторизации
-![Окно авторизации](./images_readme/auth_winodw.png)
+![Окно авторизации](./images_readme/auth_window.png)
+В окне логина представленна авторизациия в Red Expert посредством пользователя. Мы используем данные пользователя в самой базе для входа. Для этого выполняем данную функцию:
+    ```python
+    def login():
+        username = entry_username.get()
+        password = entry_password.get()
+
+        try:
+            database_path =  current_dir / 'KADRBASE.FDB'
+
+            print(database_path)
+            conn = fdb.connect(
+                host='localhost',
+                database=database_path,
+                user=username,
+                password=password,
+                port=3050,
+                charset='utf8'
+            )
+
+            cursor = conn.cursor()
+
+            # проверка ролей
+            cursor.execute("""
+                SELECT DISTINCT RDB$RELATION_NAME 
+                FROM RDB$USER_PRIVILEGES 
+                WHERE RDB$USER = ? 
+                AND RDB$PRIVILEGE = 'M'
+                AND RDB$RELATION_NAME NOT LIKE 'RDB$%'
+            """, (username.strip().upper(),))
+            
+            roles = [row[0].strip() for row in cursor.fetchall()]
+            conn.close()
+            if 'ADMINISTRATOR_APP' in roles:
+                role = "Admin"
+                messagebox.showinfo("Успех", f"Авторизация успешна! \n Вы авторизовались как {username} \n Вы авторизовались как Администратор")
+                login_window.destroy()
+                subprocess.Popen(["python", str(current_dir / "init" / 'ADMIN_MODE.py'), username, password, role])
+            elif 'EMPLOYER_APP' in roles:
+                role = "User"
+                messagebox.showinfo("Успех", f"Авторизация успешна! \n Вы авторизовались как {username} \n Вы авторизовались как Пользователь")
+                login_window.destroy()
+                subprocess.Popen(["python", str(current_dir / "init" /'USER_MODE.py'), username, password, role])
+            else:
+                messagebox.showwarning("Ошибка", "Пользователь не имеет подходящей роли.")
+        except fdb.Error as e:
+            messagebox.showwarning("Ошибка", f"Неверное имя пользователя или пароль: {e}")
+
+Тут мы указываем данные полученные с inputbox из строк Tkinter. После этого выполняем вход в базу данных через бибилеотеку JBD в которой по шаблону ввводим наши данные:
+
 
 
  
