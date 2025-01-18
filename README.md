@@ -750,4 +750,376 @@ def color_rows(tree):
 ```
 В результате получается функциональная и стильная таблица для отображения данных о сотрудниках.
 
+# Добавление функционала Добалвения Удаления Изменения строк
 
+Все функции прописанны в отдельных файлах и распределены по проекту. Стоит отметить что можно создать и универсальные функции, но для этого требуется тонкая настройка функции и валидация данных. В папках **init/tables/button_functions/** представлены файлы по обновлению и добавлению строк, а также их изменению и удаления.
+```bash
+                └── button_function
+                    ├── add_button.py                           # Функционал кнопки добавления
+                    ├── delete_button.py                        # Функционал кнопки удаления
+                    ├── edit_button.py                          # Функционал кнопки редактирования
+                    ├── refresh_button.py                       # Функционал кнопки обновления таблицы
+                    └── search_button.py                        # Функция кнопки поиска
+```
+
+## Добавление строк в таблицу
+Функция open_add_employer_window(conn) создает графический интерфейс для добавления нового сотрудника в базу данных.
+
+Эта функция создает окно, в котором пользователь может ввести данные о новом сотруднике. После заполнения всех полей и нажатия кнопки "Добавить", данные отправляются в базу данных. Если всё прошло успешно, сотрудник добавляется, а если нет — пользователь увидит сообщение об ошибке.
+
+**Функция open_add_employer_window**
+```python 
+def open_add_employer_window(conn):
+    add_window = Toplevel()
+    add_window.title("Добавить сотрудника")
+    add_window.geometry("400x1000")
+    add_window.configure(background="#fff")
+    current_dir = Path(__file__).resolve().parent
+    # Поднимаемся на две папки вверх и переходим в директорию src
+    icon_path = current_dir.parents[2] / 'src' / 'r_app.ico'
+    print(icon_path)
+    add_window.iconbitmap(icon_path)
+
+    entries = {}
+    field_sizes = {
+        "SMALL_DATA": 255,
+        "SURNAME": 50,
+        "NAME_EMP": 50,
+        "SURNAME_FATHER": 50,
+        "POL": 1,
+        "INN": 12,
+        "SNILS": 14,
+        "DATA_BIRTH": 10,
+        "DATE_CITY": 200,
+        "TYPE_DOC": 20,
+        "DOC_NUM": 15,
+        "DOC_DATE": 10,
+        "DOC_WERE": 200,
+        "ADRESS_REGIST": 200,
+        "ADRESS_PROPISKA": 200,
+        "MILITARY_NUM": 7,
+        "MILITARY_DATE": 10,
+        "EDUCATION": 20
+    }
+
+    default_values = {
+        "SMALL_DATA": "ФИО",
+        "SURNAME": "Не указано",
+        "NAME_EMP": "Не указано",
+        "SURNAME_FATHER": "Не указано",
+        "POL": "Н",
+        "INN": "000",
+        "SNILS": "000",
+        "DATA_BIRTH": "01.01.2000",
+        "DATE_CITY": "Не указано",
+        "TYPE_DOC": "Не указано",
+        "DOC_NUM": "Не указано",
+        "DOC_DATE": "01.01.2000",
+        "DOC_WERE": "Не указано",
+        "ADRESS_REGIST": "Не указано",
+        "ADRESS_PROPISKA": "Не указано",
+        "MILITARY_NUM": "000000",
+        "MILITARY_DATE": "01.01.2000",
+        "EDUCATION": "Не указано"
+    }
+
+    def validate_input_length(entry, max_length):
+        def validate(P):
+            if len(P) <= max_length:
+                return True
+            else:
+                return False
+        vcmd = (entry.register(validate), '%P')
+        entry.config(validate="key", validatecommand=vcmd)
+
+    # SMALL_DATA
+    frame = ttk.Frame(add_window)
+    frame.pack(anchor=tk.W, padx=10, pady=5)  
+    label = ttkb.Label(frame, bootstyle="inverse-primary", text=translate_emp_columns(["SMALL_DATA"])[0] + " Д:255", width=20)
+    label.pack(side=tk.LEFT)  
+    entry = ttkb.Entry(frame, bootstyle="primary")
+    entry.pack(side=tk.LEFT)  
+    entry.config(width=field_sizes["SMALL_DATA"])
+    validate_input_length(entry, field_sizes["SMALL_DATA"])
+    entries["SMALL_DATA"] = entry
+
+    # SURNAME
+    frame = ttk.Frame(add_window)
+    frame.pack(anchor=tk.W, padx=10, pady=5)  
+    label = ttkb.Label(frame, bootstyle="inverse-primary", text=translate_emp_columns(["SURNAME"])[0] + " Д:50", width=20)
+    label.pack(side=tk.LEFT)  
+    entry = ttkb.Entry(frame, bootstyle="primary")
+    entry.pack(side=tk.LEFT) 
+    entry.config(width=field_sizes["SURNAME"])
+    validate_input_length(entry, field_sizes["SURNAME"])
+    entries["SURNAME"] = entry
+
+    # NAME
+    frame = ttk.Frame(add_window)
+    frame.pack(anchor=tk.W, padx=10, pady=5) 
+    label = ttkb.Label(frame, bootstyle="inverse-primary", text=translate_emp_columns(["NAME_EMP"])[0] + " Д:50", width=20)
+    label.pack(side=tk.LEFT)  
+    entry = ttkb.Entry(frame, bootstyle="primary")
+    entry.pack(side=tk.LEFT)  
+    entry.config(width=field_sizes["NAME_EMP"])
+    validate_input_length(entry, field_sizes["NAME_EMP"])
+    entries["NAME_EMP"] = entry
+
+    # SURNAME_FATHER
+    frame = ttk.Frame(add_window)
+    frame.pack(anchor=tk.W, padx=10, pady=5)  
+    label = ttkb.Label(frame, bootstyle="inverse-primary", text=translate_emp_columns(["SURNAME_FATHER"])[0] + " Д:50", width=20)
+    label.pack(side=tk.LEFT)  
+    entry = ttkb.Entry(frame, bootstyle="primary")
+    entry.pack(side=tk.LEFT)  
+    entry.config(width=field_sizes["SURNAME_FATHER"])
+    validate_input_length(entry, field_sizes["SURNAME_FATHER"])
+    entries["SURNAME_FATHER"] = entry
+
+    # POL
+    frame = ttk.Frame(add_window)
+    frame.pack(anchor=tk.W, padx=10, pady=5) 
+    label = ttkb.Label(frame, bootstyle="inverse-primary", text=translate_emp_columns(["POL"])[0] + " Д:1", width=20)
+    label.pack(side=tk.LEFT)  
+    pol_var = StringVar()
+    pol_combobox = ttkb.Combobox(frame, textvariable=pol_var, values=["М", "Ж"], bootstyle="primary", width=field_sizes["POL"])
+    pol_combobox.pack(side=tk.LEFT)  
+    entries["POL"] = pol_combobox
+
+    # INN
+    frame = ttk.Frame(add_window)
+    frame.pack(anchor=tk.W, padx=10, pady=5)  
+    label = ttkb.Label(frame, bootstyle="inverse-primary", text=translate_emp_columns(["INN"])[0] + " Д:12", width=20)
+    label.pack(side=tk.LEFT)  
+    entry = ttkb.Entry(frame, bootstyle="primary")
+    entry.pack(side=tk.LEFT)  
+    entry.config(width=field_sizes["INN"])
+    validate_input_length(entry, field_sizes["INN"])
+    entries["INN"] = entry
+
+    # SNILS
+    frame = ttk.Frame(add_window)
+    frame.pack(anchor=tk.W, padx=10, pady=5) 
+    label = ttkb.Label(frame, bootstyle="inverse-primary", text=translate_emp_columns(["SNILS"])[0] + " Д:14", width=20)
+    label.pack(side=tk.LEFT)  
+    entry = ttkb.Entry(frame, bootstyle="primary")
+    entry.pack(side=tk.LEFT)  
+    entry.config(width=field_sizes["SNILS"])
+    validate_input_length(entry, field_sizes["SNILS"])
+    entries["SNILS"] = entry
+
+    # DATA_BIRTH
+    frame = ttk.Frame(add_window)
+    frame.pack(anchor=tk.W, padx=10, pady=5)  
+    label = ttkb.Label(frame, bootstyle="inverse-primary", text=translate_emp_columns(["DATA_BIRTH"])[0], width=20)
+    label.pack(side=tk.LEFT) 
+    data_birth_entry = ttkb.DateEntry(frame, bootstyle="primary", width=12)
+    data_birth_entry.pack(side=tk.LEFT)  
+    entries["DATA_BIRTH"] = data_birth_entry
+
+    # DATE_CITY
+    frame = ttk.Frame(add_window)
+    frame.pack(anchor=tk.W, padx=10, pady=5)  
+    label = ttkb.Label(frame, bootstyle="inverse-primary", text=translate_emp_columns(["DATE_CITY"])[0] + " Д:200", width=20)
+    label.pack(side=tk.LEFT)  
+    entry = ttkb.Entry(frame, bootstyle="primary")
+    entry.pack(side=tk.LEFT) 
+    entry.config(width=field_sizes["DATE_CITY"])
+    validate_input_length(entry, field_sizes["DATE_CITY"])
+    entries["DATE_CITY"] = entry
+
+    # TYPE_DOC
+    frame = ttk.Frame(add_window)
+    frame.pack(anchor=tk.W, padx=10, pady=5)  
+    label = ttkb.Label(frame, bootstyle="inverse-primary", text=translate_emp_columns(["TYPE_DOC"])[0] + " Д:20", width=20)
+    label.pack(side=tk.LEFT)  
+    type_doc_var = StringVar()
+    type_doc_combobox = ttkb.Combobox(frame, textvariable=type_doc_var, values=["ПАСПОРТ РФ", "ВРНР", "ИДУЛ"], bootstyle="primary", width=field_sizes["TYPE_DOC"])
+    type_doc_combobox.pack(side=tk.LEFT)  
+    entries["TYPE_DOC"] = type_doc_combobox
+
+    # DOC_NUM
+    frame = ttk.Frame(add_window)
+    frame.pack(anchor=tk.W, padx=10, pady=5)  
+    label = ttkb.Label(frame, bootstyle="inverse-primary", text=translate_emp_columns(["DOC_NUM"])[0] + " Д:15", width=20)
+    label.pack(side=tk.LEFT)  
+    entry = ttkb.Entry(frame, bootstyle="primary")
+    entry.pack(side=tk.LEFT)  
+    entry.config(width=field_sizes["DOC_NUM"])
+    validate_input_length(entry, field_sizes["DOC_NUM"])
+    entries["DOC_NUM"] = entry
+
+    # DOC_DATE
+    frame = ttk.Frame(add_window)
+    frame.pack(anchor=tk.W, padx=10, pady=5) 
+    label = ttkb.Label(frame, bootstyle="inverse-primary", text=translate_emp_columns(["DOC_DATE"])[0], width=20)
+    label.pack(side=tk.LEFT) 
+    doc_date_entry = ttkb.DateEntry(frame, width=12, bootstyle="primary")
+    doc_date_entry.pack(side=tk.LEFT)  
+    entries["DOC_DATE"] = doc_date_entry
+
+    # DOC_WERE
+    frame = ttk.Frame(add_window)
+    frame.pack(anchor=tk.W, padx=10, pady=5) 
+    label = ttkb.Label(frame, bootstyle="inverse-primary", text=translate_emp_columns(["DOC_WERE"])[0] + " Д:200", width=20)
+    label.pack(side=tk.LEFT)  
+    entry = ttkb.Entry(frame, bootstyle="primary")
+    entry.pack(side=tk.LEFT)  
+    entry.config(width=field_sizes["DOC_WERE"])
+    validate_input_length(entry, field_sizes["DOC_WERE"])
+    entries["DOC_WERE"] = entry
+
+    # ADRESS_REGIST
+    frame = ttk.Frame(add_window)
+    frame.pack(anchor=tk.W, padx=10, pady=5) 
+    label = ttkb.Label(frame, bootstyle="inverse-primary", text=translate_emp_columns(["ADRESS_REGIST"])[0] + " Д:200", width=20)
+    label.pack(side=tk.LEFT)  
+    entry = ttkb.Entry(frame, bootstyle="primary")
+    entry.pack(side=tk.LEFT)  
+    entry.config(width=field_sizes["ADRESS_REGIST"])
+    validate_input_length(entry, field_sizes["ADRESS_REGIST"])
+    entries["ADRESS_REGIST"] = entry
+
+    # ADRESS_PROPISKA
+    frame = ttk.Frame(add_window)
+    frame.pack(anchor=tk.W, padx=10, pady=5)  
+    label = ttkb.Label(frame, bootstyle="inverse-primary", text=translate_emp_columns(["ADRESS_PROPISKA"])[0] + " Д:200", width=20)
+    label.pack(side=tk.LEFT)  
+    entry = ttkb.Entry(frame, bootstyle="primary")
+    entry.pack(side=tk.LEFT)  
+    entry.config(width=field_sizes["ADRESS_PROPISKA"])
+    validate_input_length(entry, field_sizes["ADRESS_PROPISKA"])
+    entries["ADRESS_PROPISKA"] = entry
+
+    # MILITARY_NUM
+    frame = ttk.Frame(add_window)
+    frame.pack(anchor=tk.W, padx=10, pady=5)  
+    label = ttkb.Label(frame, bootstyle="inverse-primary", text=translate_emp_columns(["MILITARY_NUM"])[0] + " Д:7", width=20)
+    label.pack(side=tk.LEFT)  
+    entry = ttkb.Entry(frame, bootstyle="primary")
+    entry.pack(side=tk.LEFT)  
+    entry.config(width=field_sizes["MILITARY_NUM"])
+    validate_input_length(entry, field_sizes["MILITARY_NUM"])
+    entries["MILITARY_NUM"] = entry
+
+    # MILITARY_DATE
+    frame = ttk.Frame(add_window)
+    frame.pack(anchor=tk.W, padx=10, pady=5)  
+    label = ttkb.Label(frame, bootstyle="inverse-primary", text=translate_emp_columns(["MILITARY_DATE"])[0], width=20)
+    label.pack(side=tk.LEFT)  
+    military_date_entry = ttkb.DateEntry(frame, bootstyle="primary", width=12)
+    military_date_entry.pack(side=tk.LEFT)  
+    entries["MILITARY_DATE"] = military_date_entry
+
+    # EDUCATION
+
+    frame = ttk.Frame(add_window)
+    frame.pack(anchor=tk.W, padx=10, pady=5)  
+    label = ttkb.Label(frame, bootstyle="inverse-primary", text=translate_emp_columns(["EDUCATION"])[0], width=20)
+    label.pack(side=tk.LEFT)  
+    type_edu_var = StringVar()
+    type_edu_combobox = ttkb.Combobox(frame, textvariable=type_edu_var, values=["Среднее","Среднее неполное","Специалитет","Высшее неполное","Высшее"], bootstyle="primary", width=field_sizes["EDUCATION"])
+    type_edu_combobox.pack(side=tk.LEFT) 
+    entries["EDUCATION"] = entry
+
+
+    # Кнопка добавления сотрудника
+    def add_employer():
+        cursor = conn.cursor()
+        # SQL-запрос
+        insert_query = """
+        INSERT INTO EMPLOYER (SMALL_DATA, SURNAME, NAME_EMP, SURNAME_FATHER, POL, INN, SNILS, DATA_BIRTH, DATE_CITY, TYPE_DOC, DOC_NUM, DOC_DATE, DOC_WERE, ADRESS_REGIST, ADRESS_PROPISKA, MILITARY_NUM, MILITARY_DATE, EDUCATION)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """
+        insert_values = tuple(
+            entry.entry.get() if isinstance(entry, ttkb.DateEntry) else entry.get() or "Н"
+            for entry in entries.values()
+        )
+
+        try:
+            print(insert_values)
+            cursor.execute(insert_query, insert_values)
+            conn.commit()
+            messagebox.showwarning("Успех!", "Новый сотрудник добавлен!")
+        except Exception as e:
+            messagebox.showwarning("Предупреждение", "Ошибка при добавлении данных:")
+            print(e)
+
+    ttkb.Button(add_window, bootstyle="primary", text="Добавить", command=add_employer).pack(pady=10)
+```
+### Как это работает
+Создание окна:
+Функция открывает новое окно с заголовком "Добавить сотрудника". Окно имеет белый фон и размер 400x1000 пикселей.
+В окне также загружается иконка из файла r_app.ico, которая находится в папке src.
+Поля для ввода данных:
+В окне создаются поля для ввода информации о сотруднике. Каждое поле соответствует определённому атрибуту, например:
+
+- Фамилия (SURNAME),
+- Имя (NAME_EMP),
+- Отчество (SURNAME_FATHER),
+- Пол (POL),
+- ИНН (INN),
+- СНИЛС (SNILS),
+- Дата рождения (DATA_BIRTH),
+- Адрес (ADRESS_REGIST),
+- Образование (EDUCATION) и т.д.
+
+Для каждого поля есть ограничение на количество символов, которое можно ввести. Например, фамилия не может быть длиннее 50 символов, а ИНН — длиннее 12 символов.
+
+Типы полей:
+
+- Большинство полей — это текстовые поля (Entry), куда пользователь вводит данные.
+Некоторые поля, такие как пол (POL) или тип документа (TYPE_DOC), используют выпадающие списки (Combobox), где можно выбрать значение из заранее заданных вариантов.
+- Для дат (например, дата рождения или дата выдачи документа) используются специальные поля для выбора даты (DateEntry).
+Кнопка "Добавить":
+Внизу окна есть кнопка "Добавить". Когда пользователь нажимает на неё, запускается функция add_employer().
+Эта функция собирает все данные, которые пользователь ввёл в поля, и формирует из них команду для базы данных.
+Затем данные отправляются в таблицу EMPLOYER в базе данных. Если всё прошло успешно, пользователь увидит сообщение "Новый сотрудник добавлен!". Если что-то пошло не так (например, ошибка в данных или подключении к базе), появится сообщение об ошибке.
+
+### Взаимодействие с базой данных
+Функция add_employer() является ключевым элементом модуля добавления нового сотрудника в систему. Она отвечает за сбор данных, введенных пользователем в графическом интерфейсе, формирование SQL-запроса для вставки этих данных в таблицу базы данных и обработку возможных ошибок. Ниже приведено детальное описание работы функции.
+Инициализация курсора
+```python
+cursor = conn.cursor()
+```
+Курсор — это объект, который позволяет выполнять операции с базой данных, такие как выполнение SQL-запросов и получение результатов. В данном случае курсор создается на основе существующего соединения с базой данных (conn), которое передается в функцию open_add_employer_window(conn).
+
+Формирование SQL-запроса
+```python
+insert_query = """
+INSERT INTO EMPLOYER (SMALL_DATA, SURNAME, NAME_EMP, SURNAME_FATHER, POL, INN, SNILS, DATA_BIRTH, DATE_CITY, TYPE_DOC, DOC_NUM, DOC_DATE, DOC_WERE, ADRESS_REGIST, ADRESS_PROPISKA, MILITARY_NUM, MILITARY_DATE, EDUCATION)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+"""
+```
+SQL-запрос предназначен для вставки новой записи в таблицу EMPLOYER. В запросе перечислены все столбцы таблицы, в которые будут добавлены данные. Вместо значений используются знаки вопроса (?), что позволяет безопасно передавать данные в запрос, избегая уязвимостей, таких как SQL-инъекции.
+
+Сбор данных из полей формы
+```python 
+insert_values = tuple(
+    entry.entry.get() if isinstance(entry, ttkb.DateEntry) else entry.get() or "Н"
+    for entry in entries.values()
+)
+```
+Данные, введенные пользователем в поля формы, собираются в кортеж insert_values. Для этого используется генератор кортежа:
+
+- entries: Словарь, где ключи — это названия полей (например, SURNAME, NAME_EMP), а значения — объекты полей ввода (например, ttkb.Entry, ttkb.Combobox, ttkb.DateEntry).
+- entry.entry.get(): Если поле является объектом ttkb.DateEntry (поле для выбора даты), значение извлекается с помощью метода .entry.get().
+- entry.get(): Для обычных текстовых полей (ttkb.Entry) и выпадающих списков (ttkb.Combobox) значение извлекается с помощью метода .get().
+- or "Н": Если поле пустое, вместо него подставляется значение по умолчанию "Н". Это необходимо для предотвращения ошибок, связанных с попыткой вставки NULL в базу данных.
+- tuple(...): Все значения собираются в кортеж, который будет передан в SQL-запрос.
+
+Выполнение SQL-запроса
+```python 
+try:
+    print(insert_values)
+    cursor.execute(insert_query, insert_values)
+    conn.commit()
+    messagebox.showwarning("Успех!", "Новый сотрудник добавлен!")
+```
+### Пример работы функции
+1. Пользователь заполняет поля формы данными о новом сотруднике (например, фамилия, имя, ИНН, дата рождения и т.д.).
+2. Нажимает кнопку "Добавить".
+3. Функция add_employer() собирает данные из полей и формирует кортеж insert_values.
+4. Выполняется SQL-запрос, и данные вставляются в таблицу EMPLOYER.
+5. Если операция успешна, пользователь видит сообщение "Новый сотрудник добавлен!".
+5.1 Если возникает ошибка, пользователь получает уведомление, а разработчик может проанализировать её, изучив вывод в консоли.
