@@ -1191,3 +1191,253 @@ try:
 - cursor.execute("DELETE FROM EMPLOYER WHERE ID_EMPLOYER = ?", [selected_employer_id]): Выполняет SQL-запрос на удаление записи с - указанным ID_EMPLOYER.
 - conn.commit(): Фиксирует изменения в базе данных.
 messagebox.showwarning("Успех", "Сотрудники успешно удалены"): Если удаление прошло успешно, пользователь получает уведомление.
+
+## Изименение строк в таблице
+![123](./images_readme/table_window_edit.png)
+
+Функция open_edit_employer_window(conn, tree) предназначена для редактирования данных о сотруднике в базе данных. Она открывает новое окно, в котором пользователь может изменить информацию о выбранном сотруднике, и сохраняет изменения в базе данных. Ниже приведено детальное описание работы функции.
+```python
+def open_edit_employer_window(conn, tree):
+    selected_item = tree.selection()
+    if not selected_item:
+        messagebox.showwarning("Предупреждение", "Пожалуйста, выберите строку для редактирования")
+        return
+
+    item_values = tree.item(selected_item)['values']
+    print("Полученные данные ", item_values ,"\n")
+    columns = [
+        "ID_EMPLOYER", "SMALL_DATA", "SURNAME", "NAME_EMP", "SURNAME_FATHER", "POL", "INN", "SNILS",
+        "DATA_BIRTH", "DATE_CITY", "TYPE_DOC", "DOC_NUM", "DOC_DATE", "DOC_WERE", "ADRESS_REGIST",
+        "ADRESS_PROPISKA", "MILITARY_NUM", "MILITARY_DATE", "EDUCATION"
+    ]
+    
+    def edit_employer():
+        new_data = {}
+        for col, entry in entries.items():
+            if isinstance(entry, ttkb.DateEntry):
+                new_data[col] = entry.get_date().strftime('%Y-%m-%d')  
+            else:
+                new_data[col] = entry.get()
+
+
+        try:
+            cursor = conn.cursor()
+            update_query = "UPDATE EMPLOYER SET "
+            update_values = []
+            for col in columns:
+                if col != "ID_EMPLOYER":
+                    update_query += f"{col} = ?, "
+                    update_values.append(new_data[col])
+            update_query = update_query.rstrip(', ')
+            update_query += " WHERE ID_EMPLOYER = ?"
+            update_values.append(item_values[columns.index("ID_EMPLOYER")])
+            cursor.execute(update_query, update_values)
+            conn.commit()
+            messagebox.showinfo("Успех", "Изменения успешно сохранены в базу данных")
+            edit_window.destroy()
+        except fdb.Error as e:
+            messagebox.showerror("Ошибка", f"Ошибка сохранения изменений: {e}")
+
+    edit_window = Toplevel()
+    edit_window.title("Редактировать сотрудника")
+    edit_window.geometry("400x1000")
+    current_dir = Path(__file__).resolve().parent
+    icon_path = current_dir.parents[2] / 'src' / 'r_app.ico'
+    edit_window.iconbitmap(icon_path)
+
+    entries = {}
+    field_sizes = {
+        "SMALL_DATA": 255,
+        "SURNAME": 50,
+        "NAME_EMP": 50,
+        "SURNAME_FATHER": 50,
+        "POL": 10,
+        "INN": 12,
+        "SNILS": 14,
+        "DATA_BIRTH": 10,
+        "DATE_CITY": 200,
+        "TYPE_DOC": 20,
+        "DOC_NUM": 15,
+        "DOC_DATE": 10,
+        "DOC_WERE": 200,
+        "ADRESS_REGIST": 200,
+        "ADRESS_PROPISKA": 200,
+        "MILITARY_NUM": 7,
+        "MILITARY_DATE": 10,
+        "EDUCATION": 20
+    }
+
+    for col in ["SMALL_DATA", "SURNAME", "NAME_EMP", "SURNAME_FATHER", "POL", "INN", "SNILS",
+                "DATA_BIRTH", "DATE_CITY", "TYPE_DOC", "DOC_NUM", 
+                "DOC_DATE", "DOC_WERE", "ADRESS_REGIST", "ADRESS_PROPISKA",
+                "MILITARY_NUM", "MILITARY_DATE", "EDUCATION"]:
+
+        frame = Frame(edit_window)
+        frame.pack(anchor=W, padx=10, pady=5)
+
+        label = ttkb.Label(frame, bootstyle="primary", text=translate_emp_columns([col])[0])
+        label.pack(side=LEFT)
+
+        if col in ["DATA_BIRTH", "DOC_DATE", "MILITARY_DATE"]:
+            date_entry = ttkb.DateEntry(frame, bootstyle="primary", width=12)
+            date_entry.pack(side=LEFT)
+            date_entry.entry.delete(0, END)
+            date_entry.entry.insert(0, item_values[columns.index(col)])
+            entries[col] = date_entry
+        else:
+            entry = ttkb.Entry(frame, bootstyle="primary")
+            entry.pack(side=LEFT)
+            entry.config(width=field_sizes[col])
+            entry.insert(0, item_values[columns.index(col)])
+            entries[col] = entry
+
+    ttkb.Button(edit_window, bootstyle="primary", text="Сохранить изменения", command=edit_employer).pack(pady=10)
+```
+Функция выполняет следующие задачи:
+
+1. Проверяет, выбрал ли пользователь строку для редактирования.
+2. Открывает окно редактирования с предзаполненными данными выбранного сотрудника.
+3. Позволяет пользователю изменить данные и сохранить их в базе данных.
+4. Обрабатывает возможные ошибки и предоставляет обратную связь пользователю.
+
+Параметры функции
+- conn: Объект соединения с базой данных. Используется для выполнения SQL-запросов.
+- tree: Объект ttk.Treeview, который представляет таблицу с данными о сотрудниках. Из этого объекта извлекаются данные выбранной строки.
+
+### Алгоритм работы функции
+Проверка выбранной строки
+```python 
+selected_item = tree.selection()
+if not selected_item:
+    messagebox.showwarning("Предупреждение", "Пожалуйста, выберите строку для редактирования")
+    return
+```
+tree.selection(): Возвращает список идентификаторов выбранных строк в таблице tree. Если ни одна строка не выбрана, функция выводит предупреждение и завершает выполнение.
+
+Извлечение данных выбранной строки
+```python
+item_values = tree.item(selected_item)['values']
+print("Полученные данные ", item_values ,"\n")
+columns = [
+    "ID_EMPLOYER", "SMALL_DATA", "SURNAME", "NAME_EMP", "SURNAME_FATHER", "POL", "INN", "SNILS",
+    "DATA_BIRTH", "DATE_CITY", "TYPE_DOC", "DOC_NUM", "DOC_DATE", "DOC_WERE", "ADRESS_REGIST",
+    "ADRESS_PROPISKA", "MILITARY_NUM", "MILITARY_DATE", "EDUCATION"
+]
+```
+- tree.item(selected_item)['values']: Возвращает значения всех колонок выбранной строки.
+- columns: Список колонок таблицы, который используется для сопоставления данных с полями формы.
+
+Создание окна редактирования
+```python
+edit_window = Toplevel()
+edit_window.title("Редактировать сотрудника")
+edit_window.geometry("400x1000")
+current_dir = Path(__file__).resolve().parent
+icon_path = current_dir.parents[2] / 'src' / 'r_app.ico'
+edit_window.iconbitmap(icon_path)
+```
+- Toplevel(): Создает новое окно для редактирования данных.
+- edit_window.title(...): Устанавливает заголовок окна.
+- edit_window.geometry(...): Задает размеры окна.
+- icon_path: Устанавливает иконку окна.
+
+Создание полей для редактирования
+```python
+entries = {}
+field_sizes = {
+    "SMALL_DATA": 255,
+    "SURNAME": 50,
+    "NAME_EMP": 50,
+    "SURNAME_FATHER": 50,
+    "POL": 10,
+    "INN": 12,
+    "SNILS": 14,
+    "DATA_BIRTH": 10,
+    "DATE_CITY": 200,
+    "TYPE_DOC": 20,
+    "DOC_NUM": 15,
+    "DOC_DATE": 10,
+    "DOC_WERE": 200,
+    "ADRESS_REGIST": 200,
+    "ADRESS_PROPISKA": 200,
+    "MILITARY_NUM": 7,
+    "MILITARY_DATE": 10,
+    "EDUCATION": 20
+}
+
+for col in ["SMALL_DATA", "SURNAME", "NAME_EMP", "SURNAME_FATHER", "POL", "INN", "SNILS",
+            "DATA_BIRTH", "DATE_CITY", "TYPE_DOC", "DOC_NUM", 
+            "DOC_DATE", "DOC_WERE", "ADRESS_REGIST", "ADRESS_PROPISKA",
+            "MILITARY_NUM", "MILITARY_DATE", "EDUCATION"]:
+
+    frame = Frame(edit_window)
+    frame.pack(anchor=W, padx=10, pady=5)
+
+    label = ttkb.Label(frame, bootstyle="primary", text=translate_emp_columns([col])[0])
+    label.pack(side=LEFT)
+
+    if col in ["DATA_BIRTH", "DOC_DATE", "MILITARY_DATE"]:
+        date_entry = ttkb.DateEntry(frame, bootstyle="primary", width=12)
+        date_entry.pack(side=LEFT)
+        date_entry.entry.delete(0, END)
+        date_entry.entry.insert(0, item_values[columns.index(col)])
+        entries[col] = date_entry
+    else:
+        entry = ttkb.Entry(frame, bootstyle="primary")
+        entry.pack(side=LEFT)
+        entry.config(width=field_sizes[col])
+        entry.insert(0, item_values[columns.index(col)])
+        entries[col] = entry
+```
+- entries: Словарь для хранения объектов полей ввода.
+- field_sizes: Словарь с максимальными размерами полей.
+Для каждого поля создается:
+    - frame: Контейнер для размещения метки и поля ввода.
+    - label: Меткас названием поля.
+    - entry: Поле ввода. Для дат используется ttkb.DateEntry, для остальных полей — ttkb.Entry.
+Данные из выбранной строки предзаполняются в поля ввода.
+
+Сохранение изменений
+```python
+def edit_employer():
+    new_data = {}
+    for col, entry in entries.items():
+        if isinstance(entry, ttkb.DateEntry):
+            new_data[col] = entry.get_date().strftime('%Y-%m-%d')  
+        else:
+            new_data[col] = entry.get()
+
+    try:
+        cursor = conn.cursor()
+        update_query = "UPDATE EMPLOYER SET "
+        update_values = []
+        for col in columns:
+            if col != "ID_EMPLOYER":
+                update_query += f"{col} = ?, "
+                update_values.append(new_data[col])
+        update_query = update_query.rstrip(', ')
+        update_query += " WHERE ID_EMPLOYER = ?"
+        update_values.append(item_values[columns.index("ID_EMPLOYER")])
+        cursor.execute(update_query, update_values)
+        conn.commit()
+        messagebox.showinfo("Успех", "Изменения успешно сохранены в базу данных")
+        edit_window.destroy()
+    except fdb.Error as e:
+        messagebox.showerror("Ошибка", f"Ошибка сохранения изменений: {e}")
+```
+- new_data: Словарь для хранения новых данных.
+- update_query: Формируется SQL-запрос для обновления данных.
+- update_values: Список новых значений для обновления.
+- cursor.execute(update_query, update_values): Выполняет SQL-запрос.
+- conn.commit(): Фиксирует изменения в базе данных.
+- messagebox.showinfo(...): Уведомляет пользователя об успешном сохранении.
+- edit_window.destroy(): Закрывает окно редактирования.
+- except fdb.Error as e:: Обрабатывает ошибки и выводит сообщение.
+
+Пример работы функции
+1. Пользователь выбирает строку в таблице сотрудников.
+2. Нажимает кнопку "Редактировать".
+3. Открывается окно с предзаполненными данными выбранного сотрудника.
+4. Пользователь изменяет данные и нажимает "Сохранить изменения".
+5. Если данные сохранены успешно, пользователь получает уведомление, и окно закрывается.
+6. Если произошла ошибка, пользователь получает сообщение с её описанием.
