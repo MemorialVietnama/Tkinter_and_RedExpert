@@ -2009,4 +2009,110 @@ def fetch_factor_information(conn):
 Возвращает кортеж с данными.
 
 ### 4. Создание PDF с помощью ReportLab
+```python
+def create_pdf(output_filename, data, tree, user_data):
+    c = canvas.Canvas(output_filename, pagesize=letter)
+    width, height = letter
+    image_path = current_dir.parents[2] / 'src' / 'r_app.png'
+    img = ImageReader(str(image_path))
+    c.drawImage(img, 1 * inch, height - 1 * inch, width=0.5 * inch, height=0.5 * inch)
 
+    c.setFont("Times-New-Roman", 8)
+    c.drawString(1.55 * inch, height - 0.65 * inch, "RUBY STAFF")
+    c.drawString(3.5 * inch, height - 2 * inch, "Вывод данных")
+```
+- Создается PDF-документ с помощью ReportLab.
+- Добавляется логотип (изображение) и текст.
+- Данные из базы и из TreeView (графический элемент для отображения таблиц) добавляются в PDF.
+Особенность растоновки элементов в ReportLabs:
+1. Документ можно представить в виде сетки точек. С помощью  c.drawString(1.55 * inch, height - 0.65 * inch, "RUBY STAFF"), где числовое значение * inch, - это размещение по X и Y соотвественно.
+2. Расположение элементов идет последовательно, это значит что две строчки c.drawString будут идти последовательно СВЕРХУ => ВНИЗ
+3. Существует другие способы растоновки элементов в документе, где можно изучить в API/Wiki ReportLab
+
+### 5. Создание PDF для выбранной строки
+```python
+def create_pdf_for_selected_row(output_filename, selected_row, user_data, conn):
+    c = canvas.Canvas(output_filename, pagesize=letter)
+    width, height = letter
+
+    image_path = current_dir.parents[2] / 'src' / 'r_app.ico'
+    img = ImageReader(str(image_path))
+    c.drawImage(img, 1 * inch, height - 1 * inch, width=0.5 * inch, height=0.5 * inch)
+```
+
+Эта функция создает PDF для одной выбранной строки из TreeView. Данные из строки разбиваются на отдельные поля (например, фамилия, имя, ИНН и т.д.) и добавляются в PDF.
+
+### 6. Графический интерфейс
+```python
+def full_output_form(conn, tree, user_data):
+    def confirm_output():
+        confirm_window.destroy()
+        
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM FACTOR_INFORMATION")
+        data = cursor.fetchall()
+        cursor.close()
+
+        with tempfile.NamedTemporaryFile(delete=False, suffix='.pdf') as temp_pdf:
+            temp_pdf_path = temp_pdf.name
+
+        create_pdf(temp_pdf_path, data, tree, user_data)
+```
+Создается окно подтверждения для вывода всех данных.Если пользователь подтверждает действие, данные из базы извлекаются и сохраняются в PDF. PDF отображается в новом окне с возможностью сохранения или закрытия.
+
+### 7. Отображение PDF в интерфейсе
+```python
+def display_pdf(parent, pdf_path):
+    canvas = Canvas(parent, width=800, height=600)
+    canvas.pack(fill="both", expand=True)
+
+    doc = fitz.open(pdf_path)
+
+    for page_num in range(len(doc)):
+        page = doc.load_page(page_num)
+        pix = page.get_pixmap()
+        img = PhotoImage(data=pix.tobytes("ppm"))
+        canvas.create_image(0, 0, image=img, anchor="nw")
+        canvas.image = img
+        canvas.update()
+```
+Эта функция отображает PDF-файл в графическом интерфейсе с помощью PyMuPDF.Каждая страница PDF конвертируется в изображение и отображается на холсте (Canvas).
+
+### 8. Основные функции
+- generate_pdf: Генерирует PDF для всех данных из базы.
+- generate_pdf_for_selected_row: Генерирует PDF для выбранной строки.
+- confirm_output_selected_row: Отображает окно подтверждения для вывода выбранной строки.
+
+### Как это работает вместе?
+1. Пользователь взаимодействует с графическим интерфейсом (например, выбирает строку в таблице).
+2. Программа подключается к базе данных и извлекает данные.
+3. С помощью ReportLab создается PDF-документ.
+4. PDF отображается в интерфейсе с помощью PyMuPDF.
+5. Пользователь может сохранить PDF или закрыть окно.
+
+
+# Итог
+Этот проект демонстрирует интеграцию графического интерфейса на базе библиотеки Tkinter с базой данных Red Expert. Основные функции проекта включают:
+1. Авторизация пользователя: Проверка ролей и прав доступа к базе данных.
+2. Работа с таблицами: Отображение, добавление, редактирование и удаление данных в таблицах.
+3. Логирование действий: Фиксация всех действий пользователя в журнале аудита.
+4. Создание PDF-документов: Генерация отчетов на основе данных из базы данных с использованием библиотек ReportLab и PyMuPDF.
+5. Удобный интерфейс: Простое и интуитивно понятное управление данными через графический интерфейс.
+
+Основные компоненты проекта:
+- Auth.py: Основной файл для авторизации пользователя.
+- ADMIN_MODE.py и USER_MODE.py: Файлы для работы с интерфейсом администратора и пользователя соответственно.
+- Таблицы: Файлы для работы с конкретными таблицами базы данных (например, EMPLOYER.py, DEPARTMENT.py и т.д.).
+- Функции: Вспомогательные функции для работы с базой данных, логирования, создания PDF и других задач.
+Технологии:
+- Tkinter и ttkbootstrap: Для создания графического интерфейса.
+- Firebird (Red Expert): В качестве базы данных.
+- ReportLab и PyMuPDF: Для создания и редактирования PDF-документов.
+- fdb: Для подключения и работы с базой данных Firebird.
+
+Особенности:
+- Модульность: Проект разделен на модули, что упрощает поддержку и расширение.
+- Безопасность: Проверка прав доступа и логирование действий пользователя.
+- Гибкость: Возможность работы с различными типами данных и таблицами.
+
+Этот проект может быть полезен для разработчиков, которые хотят создать приложение с графическим интерфейсом для управления данными в базе данных, а также для тех, кто интересуется интеграцией Python с базами данных и созданием отчетов в формате PDF.
