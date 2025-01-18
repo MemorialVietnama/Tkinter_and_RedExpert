@@ -1441,3 +1441,114 @@ def edit_employer():
 4. Пользователь изменяет данные и нажимает "Сохранить изменения".
 5. Если данные сохранены успешно, пользователь получает уведомление, и окно закрывается.
 6. Если произошла ошибка, пользователь получает сообщение с её описанием.
+
+
+# Обновление таблицы
+
+Функция refresh_emp_table предназначена для обновления содержимого таблицы сотрудников в графическом интерфейсе. Она выполняет несколько шагов, чтобы очистить текущие данные, загрузить новые (если они предоставлены) и отобразить их в таблице. Давайте разберем, как это работает:
+
+Код функции обновления:
+```python
+# Функция для обновления таблицы сотрудников
+def refresh_emp_table(conn, tree, data=None):
+    # Очищаем таблицу
+    for item in tree.get_children():
+        tree.delete(item)
+
+    if data is None:
+        columns, data = fetch_employer_data(conn)
+    else:
+        columns = tree["columns"]
+
+    translated_columns = translate_emp_columns(columns)
+
+    tree["columns"] = translated_columns
+    for col in translated_columns:
+        # Устанавливаем ширину 300 для столбцов с именем "Адрес"
+        if col in ["ФИО"]:
+            tree.heading(col, text=col, command=lambda c=col: sort_column(tree, c, False))
+            tree.column(col, width=300, anchor='center', stretch=False)
+        elif col in ["Адрес", "Адрес регистрации", "Адрес прописки"]:
+            tree.heading(col, text=col, command=lambda c=col: sort_column(tree, c, False))
+            tree.column(col, width=450, anchor='center', stretch=False)
+        elif col in ["Образование"]:
+            tree.heading(col, text=col, command=lambda c=col: sort_column(tree, c, False))
+            tree.column(col, width=200, anchor='center', stretch=False)
+        else:
+            # Для остальных столбцов устанавливаем ширину 200
+            tree.heading(col, text=col, command=lambda c=col: sort_column(tree, c, False))
+            tree.column(col, width=150, anchor='center', stretch=False)
+
+    for row in data:
+        display_row = [convert_date_to_display_format(str(value)) if columns[i] in ["DATA_BIRTH", "DOC_DATE", "MILITARY_DATE"] else str(value) for i, value in enumerate(row)]
+        tree.insert("", "end", values=display_row)
+
+    color_rows(tree)
+    tree.update_idletasks()
+```
+
+## Очистка таблицы
+```python
+for item in tree.get_children():
+    tree.delete(item)
+```
+В начале функции происходит очистка всех текущих строк в таблице. Метод get_children() возвращает список всех элементов (строк) в таблице, а tree.delete(item) удаляет каждый из них.
+## Получение данных
+```python
+if data is None:
+    columns, data = fetch_employer_data(conn)
+else:
+    columns = tree["columns"]
+```
+Если данные не переданы в функцию (то есть data равно None), то вызывается функция fetch_employer_data(conn), которая, вероятно, извлекает данные из базы данных. Она возвращает два значения: список колонок (columns) и список строк данных (data).
+Если данные переданы в функцию, то используются уже существующие колонки из таблицы (tree["columns"]).
+## Перевод названий колонок
+```python
+translated_columns = translate_emp_columns(columns)
+```
+Функция translate_emp_columns переводит названия колонок на другой язык (например, с английского на русский). Это нужно для отображения понятных заголовков в таблице.
+## Настройка колонок таблицы
+```python
+tree["columns"] = translated_columns
+for col in translated_columns:
+    if col in ["ФИО"]:
+        tree.heading(col, text=col, command=lambda c=col: sort_column(tree, c, False))
+        tree.column(col, width=300, anchor='center', stretch=False)
+    elif col in ["Адрес", "Адрес регистрации", "Адрес прописки"]:
+        tree.heading(col, text=col, command=lambda c=col: sort_column(tree, c, False))
+        tree.column(col, width=450, anchor='center', stretch=False)
+    elif col in ["Образование"]:
+        tree.heading(col, text=col, command=lambda c=col: sort_column(tree, c, False))
+        tree.column(col, width=200, anchor='center', stretch=False)
+    else:
+        tree.heading(col, text=col, command=lambda c=col: sort_column(tree, c, False))
+        tree.column(col, width=150, anchor='center', stretch=False)
+```
+Здесь настраиваются колонки таблицы:
+- tree["columns"] = translated_columns — устанавливаются переведенные названия колонок.
+Для каждой колонки задаются параметры:
+- tree.heading — устанавливает заголовок колонки и привязывает к нему команду сортировки (sort_column).
+- tree.column — настраивает ширину колонки, выравнивание текста (anchor) и возможность растягивания (stretch).
+Ширина колонок зависит от их названия:
+- "ФИО" — ширина 300.
+- "Адрес", "Адрес регистрации", "Адрес прописки" — ширина 450.
+- "Образование" — ширина 200.
+- Остальные колонки — ширина 150.
+## Добавление данных в таблицу
+```python
+for row in data:
+    display_row = [convert_date_to_display_format(str(value)) if columns[i] in ["DATA_BIRTH", "DOC_DATE", "MILITARY_DATE"] else str(value) for i, value in enumerate(row)]
+    tree.insert("", "end", values=display_row)
+```
+Для каждой строки данных (row) создается новая строка для отображения (display_row):
+Если колонка относится к датам (например, "DATA_BIRTH", "DOC_DATE", "MILITARY_DATE"), то значение преобразуется в удобный для отображения формат с помощью функции convert_date_to_display_format.
+Остальные значения просто преобразуются в строки.
+Затем строка добавляется в таблицу с помощью tree.insert.
+## Обновление интерфейса
+```python
+tree.update_idletasks()
+```
+Метод update_idletasks() обновляет графический интерфейс, чтобы все изменения сразу отобразились на экране.
+
+## Недостатки и недоработки функции
+В особенности написания функции в Tkinter стоит учесть, что при обновлении таблицы, виджет дерева не удаляется автоматически. Это значит что он будет дублировать обьект окна таблицы постоянно при обновлении таблицы. Это приведет к смещению окна таблицы и нарушению целостности.
