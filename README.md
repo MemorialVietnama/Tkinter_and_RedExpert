@@ -1183,18 +1183,11 @@ try:
     conn.commit()
     messagebox.showwarning("Успех", "Сотрудники успешно удалены")
 ```
-cursor = conn.cursor(): Создается курсор для выполнения SQL-запросов.
-
-for item in selected_items:: Цикл проходит по всем выбранным строкам.
-
-tree.item(item)['values']: Возвращает значения всех колонок выбранной строки.
-
-columns.index("ID_EMPLOYER"): Определяет индекс столбца ID_EMPLOYER в списке колонок.
-
-selected_employer_id: Извлекает значение ID_EMPLOYER для выбранной строки.
-
-cursor.execute("DELETE FROM EMPLOYER WHERE ID_EMPLOYER = ?", [selected_employer_id]): Выполняет SQL-запрос на удаление записи с указанным ID_EMPLOYER.
-
-conn.commit(): Фиксирует изменения в базе данных.
-
+- cursor = conn.cursor(): Создается курсор для выполнения SQL-запросов.
+- for item in selected_items:: Цикл проходит по всем выбранным строкам.
+- tree.item(item)['values']: Возвращает значения всех колонок выбранной строки.
+- columns.index("ID_EMPLOYER"): Определяет индекс столбца ID_EMPLOYER в списке колонок.
+- selected_employer_id: Извлекает значение ID_EMPLOYER для выбранной строки.
+- cursor.execute("DELETE FROM EMPLOYER WHERE ID_EMPLOYER = ?", [selected_employer_id]): Выполняет SQL-запрос на удаление записи с - указанным ID_EMPLOYER.
+- conn.commit(): Фиксирует изменения в базе данных.
 messagebox.showwarning("Успех", "Сотрудники успешно удалены"): Если удаление прошло успешно, пользователь получает уведомление.
